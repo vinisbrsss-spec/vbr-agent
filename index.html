@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>VBR Agent</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VBR Agent">
+<meta name="theme-color" content="#111111">
+<link rel="apple-touch-icon" id="appicon" href="">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#111;--s1:#191919;--s2:#202020;--cr:#F0E6C8;--cd:#A89878;--rd:#C41010;--rh:#E01212;--b1:rgba(240,230,200,.08);--b2:rgba(240,230,200,.18)}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{color:var(--cr);font-family:'Inter',sans-serif;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px)}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s}
+#splash.hide{opacity:0;pointer-events:none}
+.spl-logo{font-family:'Bebas Neue',sans-serif;font-size:4rem;letter-spacing:.08em;color:var(--cr);line-height:1}
+.spl-logo em{color:var(--rd);font-style:normal}
+.spl-sub{font-size:.58rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--rd)}
+.spl-bar{width:56px;height:2px;background:var(--b2);overflow:hidden}
+.spl-bar-fill{height:100%;width:0;background:var(--rd);animation:fill 1.4s ease forwards .3s}
+@keyframes fill{to{width:100%}}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;background:rgba(17,17,17,.97);border-bottom:1px solid var(--b1);flex-shrink:0}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.1em;color:var(--cr)}
+.logo em{color:var(--rd);font-style:normal}
+.badge{font-size:.52rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--rd);color:var(--rd);padding:.22rem .6rem;display:flex;align-items:center;gap:5px}
+.live{width:5px;height:5px;background:var(--rd);border-radius:50%;animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* API SCREEN */
+.api-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;gap:16px;text-align:center}
+.api-lbl{font-size:.58rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--rd)}
+.api-ttl{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:.04em;line-height:1.05}
+.api-dsc{font-size:.78rem;color:var(--cd);line-height:1.7;max-width:280px}
+.api-dsc strong{color:var(--cr)}
+.f-inp{width:100%;background:var(--s1);border:1px solid var(--b2);color:var(--cr);padding:12px 14px;font-family:monospace;font-size:.8rem;outline:none;-webkit-appearance:none;border-radius:0;transition:border-color .2s}
+.f-inp:focus{border-color:var(--rd)}
+.f-inp::placeholder{color:var(--cd);opacity:.4}
+.f-btn{width:100%;background:var(--rd);border:2px solid var(--rd);color:#fff;padding:.85rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;-webkit-appearance:none;border-radius:0}
+.f-btn:active{background:var(--rh)}
+.api-note{font-size:.62rem;color:var(--cd);opacity:.5;max-width:260px;line-height:1.6}
+
+/* KEY BAR */
+.kbar{padding:6px 16px;background:var(--s1);border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.kbar-lbl{font-size:.55rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--cd);flex:1}
+.kbtn{background:none;border:1px solid var(--b1);color:var(--cd);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;padding:4px 9px;-webkit-appearance:none;border-radius:0}
+.kbtn:active{border-color:var(--rd);color:var(--rd)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--b1);flex-shrink:0}
+.tab{flex:1;padding:9px 4px;text-align:center;font-size:.55rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cd);cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;outline:none;font-family:'Inter',sans-serif}
+.tab.active{color:var(--cr);border-bottom:2px solid var(--rd)}
+.ti{font-size:13px;display:block;margin-bottom:3px}
+
+/* PANELS */
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.panel.active{display:flex}
+
+/* MESSAGES */
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
+.msgs::-webkit-scrollbar{width:2px}
+.msgs::-webkit-scrollbar-thumb{background:var(--b2)}
+
+/* WELCOME */
+.welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 8px;gap:12px}
+.wlg{font-family:'Bebas Neue',sans-serif;font-size:3.4rem;letter-spacing:.06em;line-height:1;color:var(--cr)}
+.wlg em{color:var(--rd);font-style:normal}
+.wtg{font-size:.55rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--rd)}
+.wdc{font-size:.78rem;color:var(--cd);line-height:1.7;max-width:260px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;margin-top:4px}
+.qbtn{background:var(--s1);border:1px solid var(--b1);color:var(--cr);padding:11px 9px;cursor:pointer;text-align:left;outline:none;-webkit-appearance:none;border-radius:0}
+.qbtn:active{border-color:var(--rd)}
+.qi{font-size:15px;display:block;margin-bottom:4px}
+.qt{font-weight:700;font-size:.7rem;display:block}
+.qs{font-size:.6rem;color:var(--cd);display:block;margin-top:2px}
+
+/* MESSAGES */
+.msg{display:flex;gap:9px}
+.msg.user{flex-direction:row-reverse;align-self:flex-end;max-width:87%}
+.msg.agent{align-self:flex-start;max-width:97%}
+.av{width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-weight:700;font-size:.6rem}
+.av.vbr{background:var(--rd);color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:.06em}
+.av.usr{background:var(--s1);border:1px solid var(--b2);color:var(--cd);font-size:.7rem}
+.bbl{padding:9px 12px;font-size:.8rem;line-height:1.7}
+.bbl.agent{background:var(--s1);border:1px solid var(--b1);color:var(--cr)}
+.bbl.user{background:transparent;border:1px solid var(--b2);color:var(--cr);white-space:pre-wrap}
+.bbl strong{color:var(--cr);font-weight:700}
+
+/* PHOTO PREVIEW ROW */
+.photo-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.photo-row img{width:72px;height:72px;object-fit:cover;border:1px solid var(--b2)}
+
+/* AD BOX */
+.adbox{background:var(--s2);border:1px solid var(--b2);padding:14px 12px 10px;margin:10px 0;position:relative}
+.adlbl{position:absolute;top:-8px;left:9px;font-size:.5rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;background:var(--bg);padding:0 6px;color:var(--rd)}
+.adbox pre{font-family:monospace;font-size:.71rem;line-height:1.9;white-space:pre-wrap;color:var(--cd)}
+.cpbtn{display:block;width:100%;margin-top:10px;background:transparent;border:1px solid var(--b2);color:var(--cd);padding:7px;cursor:pointer;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-family:'Inter',sans-serif;-webkit-appearance:none;border-radius:0}
+.cpbtn.copied{background:var(--rd);border-color:var(--rd);color:#fff}
+
+/* STATE BUTTONS */
+.state-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.sbtn{background:transparent;border:1px solid var(--b2);color:var(--cd);padding:7px 11px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-family:'Inter',sans-serif;cursor:pointer;-webkit-appearance:none;border-radius:0}
+.sbtn:active{background:var(--rd);border-color:var(--rd);color:#fff}
+
+/* PHOTO PENDING STRIP */
+.photo-strip{display:flex;gap:6px;padding:8px 14px;background:var(--s1);border-top:1px solid var(--b1);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ph-thumb{position:relative;flex-shrink:0}
+.ph-thumb img{width:52px;height:52px;object-fit:cover;border:1px solid var(--b2)}
+.ph-rm{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--rd);border:none;color:#fff;font-size:10px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ph-add{width:52px;height:52px;background:var(--s2);border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0;color:var(--cd)}
+.ph-add:active{border-color:var(--rd)}
+
+/* LOADING */
+.dots{display:flex;gap:5px;align-items:center;padding:3px 0}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--rd);animation:dot 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* INPUT */
+.inp-area{padding:9px 14px;padding-bottom:max(9px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--b1);flex-shrink:0;background:var(--bg)}
+.inp-wrap{display:flex;gap:6px;align-items:flex-end;background:var(--s1);border:1px solid var(--b1);padding:3px 3px 3px 12px;transition:border-color .2s}
+.inp-wrap:focus-within{border-color:var(--rd)}
+.inp-icn{background:transparent;border:none;color:var(--cd);width:34px;height:34px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.inp-icn:active{color:var(--rd)}
+textarea{flex:1;background:transparent;border:none;outline:none;color:var(--cr);font-family:'Inter',sans-serif;font-size:.85rem;resize:none;padding:8px 0;max-height:96px;line-height:1.5;-webkit-appearance:none}
+textarea::placeholder{color:var(--cd);opacity:.4}
+.snd{background:var(--rd);border:none;color:#fff;width:34px;height:34px;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;-webkit-appearance:none}
+.snd:disabled{background:var(--s2);color:var(--cd)}
+.snd:not(:disabled):active{background:var(--rh)}
+#fi{display:none}
+
+/* ACTIONS */
+.act-panel{flex:1;overflow-y:auto;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+.sec-ttl{font-size:.55rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--rd);margin:14px 0 8px 2px}
+.sec-ttl:first-child{margin-top:2px}
+.abtn{background:var(--s1);border:1px solid var(--b1);color:var(--cr);padding:12px 13px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:11px;width:100%;margin-bottom:6px;outline:none;-webkit-appearance:none;border-radius:0}
+.abtn:active{border-color:var(--rd)}
+.ai{font-size:17px;flex-shrink:0}
+.al{font-weight:700;font-size:.76rem;display:block}
+.ad{font-size:.63rem;color:var(--cd);display:block;margin-top:2px}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="spl-logo">VBR<em>.</em></div>
+  <div class="spl-sub">Agente Vinted</div>
+  <div class="spl-bar"><div class="spl-bar-fill"></div></div>
+</div>
+
+<div class="hdr">
+  <div class="logo">VBR<em>.</em>ZONE</div>
+  <div class="badge"><span class="live"></span>AGENTE VINTED</div>
+</div>
+
+<!-- API SCREEN -->
+<div class="api-screen" id="api-screen">
+  <div class="api-lbl">Autenticação</div>
+  <div class="api-ttl">Insere a tua<br>API Key</div>
+  <div class="api-dsc">Vai a <strong>console.anthropic.com</strong> → API Keys → Create Key</div>
+  <input class="f-inp" id="api-inp" type="password" placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <button class="f-btn" onclick="saveKey()">Ativar Agente</button>
+  <div class="api-note">🔒 Guardada apenas no teu dispositivo. Nunca partilhada.</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0">
+  <div class="kbar">
+    <span class="kbar-lbl">🔑 API Key ativa</span>
+    <button class="kbtn" onclick="clearKey()">Trocar Chave</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-chat" onclick="switchTab('chat')"><span class="ti">💬</span>Chat</button>
+    <button class="tab" id="tab-actions" onclick="switchTab('actions')"><span class="ti">⚡</span>Ações</button>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="panel active" id="panel-chat">
+    <div class="msgs" id="msgs">
+      <div class="welcome" id="welcome">
+        <div class="wlg">VBR<em>.</em></div>
+        <div class="wtg">Agente Vinted Ativo</div>
+        <div class="wdc">Envia até 5 fotos do tênis ou faz uma pergunta sobre vendas.</div>
+        <div class="qgrid">
+          <button class="qbtn" onclick="triggerPhoto()"><span class="qi">📸</span><span class="qt">Foto → Anúncio</span><span class="qs">Até 5 fotos</span></button>
+          <button class="qbtn" onclick="qs('Analisa o meu anúncio com score detalhado. Vou colar o texto a seguir.')"><span class="qi">🔍</span><span class="qt">Analisar Anúncio</span><span class="qs">Score + melhorias</span></button>
+          <button class="qbtn" onclick="qs('Que tênis comprar agora para revender com boa margem na Vinted?')"><span class="qi">📊</span><span class="qt">Oportunidades</span><span class="qs">Revenda lucrativa</span></button>
+          <button class="qbtn" onclick="qs('Quais as melhores estratégias para vender mais na Vinted?')"><span class="qi">🚀</span><span class="qt">Estratégias</span><span class="qs">Vender mais</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOTO PENDING STRIP -->
+    <div class="photo-strip" id="photo-strip" style="display:none">
+      <div id="photo-thumbs"></div>
+      <div class="ph-add" onclick="triggerPhoto()" id="ph-add-btn">＋</div>
+    </div>
+
+    <div class="inp-area">
+      <div class="inp-wrap">
+        <button class="inp-icn" onclick="triggerPhoto()">📷</button>
+        <textarea id="txt" placeholder="Escreve ou envia fotos do tênis..." rows="1"
+          onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+        <button class="snd" id="snd" onclick="doSend()">↑</button>
+      </div>
+      <input type="file" id="fi" accept="image/*" multiple onchange="onFiles(event)">
+    </div>
+  </div>
+
+  <!-- ACTIONS PANEL -->
+  <div class="panel" id="panel-actions">
+    <div class="act-panel">
+      <div class="sec-ttl">Anúncios</div>
+      <button class="abtn" onclick="doAction('Identifica o tênis e gera o anúncio. Vou enviar as fotos pelo chat.')"><span class="ai">📸</span><div><span class="al">Foto → Anúncio</span><span class="ad">Identificação automática</span></div></button>
+      <button class="abtn" onclick="doAction('Analisa o meu anúncio com score detalhado e melhorias. Vou colar o texto.')"><span class="ai">🔍</span><div><span class="al">Analisar Anúncio</span><span class="ad">Score + pontos de melhoria</span></div></button>
+      <button class="abtn" onclick="doAction('Quero gerar um anúncio no padrão VBR. Que infos precisas de mim?')"><span class="ai">✍️</span><div><span class="al">Gerar Anúncio</span><span class="ad">PT + EN + tags otimizadas</span></div></button>
+      <button class="abtn" onclick="doAction('Melhora este anúncio no padrão VBR com mais impacto. Vou colar o texto.')"><span class="ai">✨</span><div><span class="al">Melhorar Anúncio</span><span class="ad">Reescrever com mais impacto</span></div></button>
+      <div class="sec-ttl">Estratégia</div>
+      <button class="abtn" onclick="doAction('Quais as melhores estratégias para vender mais na Vinted em 2025?')"><span class="ai">📈</span><div><span class="al">Estratégias de Venda</span><span class="ad">Dicas práticas e reais</span></div></button>
+      <button class="abtn" onclick="doAction('Como precificar bem os tênis na Vinted para maximizar margem?')"><span class="ai">💰</span><div><span class="al">Precificação</span><span class="ad">Margem + estratégia</span></div></button>
+      <button class="abtn" onclick="doAction('Como fazer fotos perfeitas para anúncios na Vinted?')"><span class="ai">📸</span><div><span class="al">Fotos Perfeitas</span><span class="ad">Checklist para conversão</span></div></button>
+      <div class="sec-ttl">Sneakers</div>
+      <button class="abtn" onclick="doAction('Que tênis estão em tendência agora para comprar e revender com boa margem?')"><span class="ai">🔥</span><div><span class="al">Tendências Hype</span><span class="ad">O que tá quente agora</span></div></button>
+      <button class="abtn" onclick="doAction('Melhores oportunidades de comprar tênis baratos na Vinted para revender?')"><span class="ai">💎</span><div><span class="al">Oportunidades</span><span class="ad">Comprar para revender</span></div></button>
+      <button class="abtn" onclick="doAction('Melhora a minha bio do perfil Vinted para parecer mais profissional.')"><span class="ai">👤</span><div><span class="al">Bio do Perfil</span><span class="ad">Otimizar credibilidade</span></div></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// PWA icon
+(function(){var c=document.createElement('canvas');c.width=180;c.height=180;var x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,180,180);x.fillStyle='#C41010';x.fillRect(0,0,180,8);x.fillStyle='#F0E6C8';x.font='900 64px Arial Black,Arial';x.textAlign='center';x.textBaseline='middle';x.fillText('VBR',90,82);x.fillStyle='#C41010';x.beginPath();x.arc(90,135,9,0,Math.PI*2);x.fill();document.getElementById('appicon').href=c.toDataURL();})();
+
+var SYSTEM=`És o agente VBR Zone, especialista em revenda, restauração e customização de sneakers, focado em vendas na Vinted e Instagram em Portugal. Falas em português de Portugal, de forma informal e direta. O utilizador chama-se Vini.
+
+FLUXO PARA FOTOS DE TÊNIS:
+Quando receberes fotos de tênis:
+1. Identifica modelo exato, marca, colorway e referência/código (ex: Nike Air Force 1 '07 White CW2288-111)
+2. Se vires a etiqueta/tag nas fotos, extrai o tamanho exato
+3. Pergunta o estado do artigo apresentando EXATAMENTE estas 5 opções numeradas:
+1. Novo com etiquetas
+2. Novo sem etiquetas
+3. Muito bom estado
+4. Bom estado
+5. Satisfatório
+4. Quando o utilizador escolher o estado (pode responder com o número ou o texto), gera IMEDIATAMENTE o anúncio completo no padrão VBR dentro de bloco de código com três backticks
+
+PADRÃO DE ANÚNCIOS VBR — coloca SEMPRE dentro de bloco de código com três backticks:
+
+🇵🇹 VERSÃO PT:
+⚠️ [AVISO — Produto 100% autêntico, sem réplicas]
+[Marca + Modelo + Colorway] — [Estado]
+📏 Tamanho [número]
+🔢 Ref: [código se identificado]
+[Descrição apelativa de 2-3 linhas sobre o modelo e o que o torna especial]
+[Condição detalhada do par]
+Com caixa ✅ / Sem caixa ❌
+📦 Envio rápido — até 2 dias úteis
+💬 Aceito pequenas reduções razoáveis. Ofertas muito baixas são ignoradas.
+🏷️ Tags PT: [8-10 tags relevantes sem #]
+
+---
+
+🇬🇧 VERSÃO EN:
+⚠️ [100% authentic product, no replicas]
+[Brand + Model + Colorway] — [Condition]
+📏 Size [number]
+🔢 Ref: [code]
+[Appealing description 2-3 lines]
+[Detailed condition]
+With box ✅ / No box ❌
+📦 Fast shipping — delivered within 2 business days
+💬 Open to small reasonable offers. Very low offers will be ignored.
+🏷️ EN Tags: [8-10 tags sem #, palavras DIFERENTES das tags PT]
+
+REGRAS: Se não for tênis remover linha caixa. Tags PT e EN com palavras DIFERENTES. Sempre aviso anti-ofertas baixas.
+ANÁLISE: Score 0-100 com breakdown (Título, Descrição, Tags, SEO, Apelo), pontos fortes, melhorias.`;
+
+var hist=[], busy=false, apiKey='', pendingPhotos=[];
+
+window.addEventListener('load',function(){
+  apiKey=localStorage.getItem('vbr_key')||'';
+  if(apiKey) showApp();
+  setTimeout(function(){var s=document.getElementById('splash');s.classList.add('hide');setTimeout(function(){s.remove();},500);},1600);
+});
+
+function saveKey(){
+  var v=document.getElementById('api-inp').value.trim();
+  if(!v.startsWith('sk-')){alert('Chave inválida. Deve começar com sk-ant-...');return;}
+  apiKey=v; localStorage.setItem('vbr_key',v); showApp();
+}
+function clearKey(){
+  localStorage.removeItem('vbr_key'); apiKey=''; hist=[]; pendingPhotos=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('api-screen').style.display='flex';
+  renderPhotoStrip();
+}
+function showApp(){
+  document.getElementById('api-screen').style.display='none';
+  var a=document.getElementById('app');
+  a.style.display='flex'; a.style.flexDirection='column';
+  a.style.flex='1'; a.style.overflow='hidden'; a.style.minHeight='0';
+}
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('tab-'+n).classList.add('active');
+  document.getElementById('panel-'+n).classList.add('active');
+}
+function doAction(m){switchTab('chat');setTimeout(function(){document.getElementById('txt').value=m;doSend();},80);}
+function qs(m){document.getElementById('txt').value=m;doSend();}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}}
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,96)+'px';}
+function rmWelcome(){var w=document.getElementById('welcome');if(w)w.remove();}
+
+// ── PHOTOS ──
+function triggerPhoto(){
+  switchTab('chat');
+  document.getElementById('fi').click();
+}
+
+function onFiles(e){
+  var files=Array.from(e.target.files);
+  var remaining=5-pendingPhotos.length;
+  if(remaining<=0){alert('Máximo 5 fotos.');e.target.value='';return;}
+  files=files.slice(0,remaining);
+  var loaded=0;
+  files.forEach(function(f){
+    var r=new FileReader();
+    r.onload=function(ev){
+      pendingPhotos.push({base64:ev.target.result.split(',')[1],type:f.type||'image/jpeg',url:ev.target.result});
+      loaded++;
+      if(loaded===files.length) renderPhotoStrip();
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+
+function renderPhotoStrip(){
+  var strip=document.getElementById('photo-strip');
+  var thumbs=document.getElementById('photo-thumbs');
+  var addBtn=document.getElementById('ph-add-btn');
+  if(pendingPhotos.length===0){strip.style.display='none';thumbs.innerHTML='';return;}
+  strip.style.display='flex';
+  thumbs.style.display='flex';
+  thumbs.style.gap='6px';
+  thumbs.innerHTML=pendingPhotos.map(function(p,i){
+    return '<div class="ph-thumb"><img src="'+p.url+'" /><button class="ph-rm" onclick="removePhoto('+i+')">×</button></div>';
+  }).join('');
+  addBtn.style.display=pendingPhotos.length<5?'flex':'none';
+}
+
+function removePhoto(i){
+  pendingPhotos.splice(i,1);
+  renderPhotoStrip();
+}
+
+// ── MESSAGES ──
+function addLoading(){
+  rmWelcome();
+  var msgs=document.getElementById('msgs');
+  var d=document.createElement('div');
+  d.className='msg agent'; d.id='load-msg';
+  d.innerHTML='<div class="av vbr">VBR</div><div class="bbl agent"><div class="dots"><span></span><span></span><span></span></div></div>';
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+function rmLoading(){var e=document.getElementById('load-msg');if(e)e.remove();}
+
+function addMsg(role,html,photos){
+  rmWelcome();
+  var msgs=document.getElementById('msgs');
+  var d=document.createElement('div');
+  d.className='msg '+role;
+  var av=role==='agent'?'<div class="av vbr">VBR</div>':'<div class="av usr">V</div>';
+  var photoHtml='';
+  if(photos&&photos.length){
+    photoHtml='<div class="photo-row">'+photos.map(function(p){return '<img src="'+p.url+'">';}).join('')+'</div>';
+  }
+  d.innerHTML=av+'<div class="bbl '+role+'">'+photoHtml+html+'</div>';
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+
+function addStateButtons(){
+  var msgs=document.getElementById('msgs');
+  var d=document.createElement('div');
+  d.className='msg agent'; d.id='state-msg';
+  var states=['Novo com etiquetas','Novo sem etiquetas','Muito bom estado','Bom estado','Satisfatório'];
+  var btns=states.map(function(s){
+    return '<button class="sbtn" onclick="pickState(\''+s+'\')">'+s+'</button>';
+  }).join('');
+  d.innerHTML='<div class="av vbr">VBR</div><div class="bbl agent"><div style="font-size:.76rem;color:var(--cd);margin-bottom:8px">Qual o estado do artigo?</div><div class="state-wrap">'+btns+'</div></div>';
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+
+function pickState(s){
+  var el=document.getElementById('state-msg');
+  if(el) el.remove();
+  addMsg('user',s.replace(/&/g,'&amp;'));
+  hist.push({role:'user',content:s});
+  callAPI();
+}
+
+function copyAd(btn,id){
+  var t=document.getElementById(id).innerText;
+  try{navigator.clipboard.writeText(t);}catch(e){var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+  btn.textContent='✓ Copiado!'; btn.classList.add('copied');
+  setTimeout(function(){btn.textContent='Copiar Anúncio';btn.classList.remove('copied');},2000);
+}
+
+function fmt(text){
+  text=text.replace(/```[\w]*\n?([\s\S]*?)```/g,function(_,c){
+    var id='ad'+Math.random().toString(36).slice(2,8);
+    var esc=c.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="adbox"><span class="adlbl">Anúncio VBR</span><pre id="'+id+'">'+esc+'</pre><button class="cpbtn" onclick="copyAd(this,\''+id+'\')">Copiar Anúncio</button></div>';
+  });
+  text=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  text=text.replace(/\n/g,'<br>');
+  return text;
+}
+
+// ── API CALL ──
+async function callAPI(){
+  if(busy) return;
+  busy=true; document.getElementById('snd').disabled=true;
+  addLoading();
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:SYSTEM,messages:hist})
+    });
+    var data=await res.json();
+    if(!res.ok) throw new Error((data&&data.error&&data.error.message)||'HTTP '+res.status);
+    var reply=data.content[0].text;
+    hist.push({role:'assistant',content:reply});
+    rmLoading();
+    addMsg('agent',fmt(reply));
+    // Show state buttons if agent asks about state
+    var low=reply.toLowerCase();
+    if((low.includes('estado') || low.includes('condição')) && low.includes('1.')){
+      addStateButtons();
+    }
+  }catch(e){
+    rmLoading();
+    addMsg('agent','<span style="color:var(--rd)">⚠ Erro:</span> '+e.message+'<br><small style="color:var(--cd);font-size:.68rem">Verifica a tua API key.</small>');
+  }
+  busy=false; document.getElementById('snd').disabled=false;
+}
+
+// ── SEND ──
+async function doSend(){
+  var txt=document.getElementById('txt');
+  var text=txt.value.trim();
+  var photos=pendingPhotos.slice();
+  if(!text && photos.length===0) return;
+  if(busy) return;
+
+  txt.value=''; txt.style.height='auto';
+  pendingPhotos=[];
+  renderPhotoStrip();
+
+  // Build user content
+  var content=[];
+  if(photos.length>0){
+    photos.forEach(function(p){
+      content.push({type:'image',source:{type:'base64',media_type:p.type,data:p.base64}});
+    });
+  }
+  var msgText=text||(photos.length>0?'Identifica este tênis e prepara o anúncio. Se vires a etiqueta extrai o tamanho.':'');
+  content.push({type:'text',text:msgText});
+
+  // Show in chat
+  addMsg('user', text?text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):(photos.length>0?'📸 '+photos.length+' foto(s) enviada(s)':''), photos);
+
+  hist.push({role:'user',content:content.length===1&&content[0].type==='text'?content[0].text:content});
+  callAPI();
+}
+</script>
+</body>
+</html>
